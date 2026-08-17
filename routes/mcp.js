@@ -26,7 +26,15 @@ import { putLabel, takeLabel } from '../lib/labelcache.js';
 const SUPPORTED_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const LATEST = SUPPORTED_VERSIONS[0];
 const SERVER_INFO = { name: 'proship-mcp', version: '1.0.0' };
-const PUBLIC_URL = process.env.PUBLIC_URL || 'https://mcp.proship.me';
+
+// Absolute base for self-referencing URLs (label downloads, docs).
+// Derived from the request Host so the server works on any domain it is
+// actually reachable at; PUBLIC_URL env var overrides when set.
+function publicBase(request) {
+  if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
+  const host = request?.headers?.host;
+  return host ? `https://${host}` : 'https://mcp.proship.me';
+}
 
 // English glosses for the Thai status pipeline (get_order_statuses).
 const STATUS_MEANINGS = {
@@ -395,13 +403,13 @@ const AUTHED_TOOLS = {
         required: ['order_ids'],
       },
     },
-    async handler(params, ctx) {
+    async handler(params, ctx, request) {
       try {
         const buf = await printLabel({ token: ctx.token }, params?.order_ids || [], {
           size: params?.size || 'normal', printer: params?.printer || 'proship',
         });
         const token = putLabel(buf);
-        return { label_url: `${PUBLIC_URL}/mcp/label/${token}`, expires_in_minutes: 10 };
+        return { label_url: `${publicBase(request)}/mcp/label/${token}`, expires_in_minutes: 10 };
       } catch (e) { return softError(e); }
     },
   },
@@ -481,7 +489,7 @@ async function handleMessage(msg, ctx, request) {
 
 // Human-readable docs page, generated from the same tool registry the
 // JSON-RPC handler uses — no separate doc source to drift.
-function docsHtml() {
+function docsHtml(base) {
   const escapeHtml = (s) => String(s ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
@@ -567,7 +575,7 @@ function docsHtml() {
     <section id="connect">
       <h2>Connect a client</h2>
       <h3>Claude / MCP clients with HTTP transport</h3>
-      <p>Point the client at <code>${PUBLIC_URL}/mcp</code>. For authenticated tools, add the header <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+      <p>Point the client at <code>${base}/mcp</code>. For authenticated tools, add the header <code>Authorization: Bearer &lt;token&gt;</code>.</p>
       <h3>Via mcp-remote bridge</h3>
       <pre><code>{
   "mcpServers": {
@@ -575,7 +583,7 @@ function docsHtml() {
       "command": "npx",
       "args": [
         "mcp-remote",
-        "${PUBLIC_URL}/mcp",
+        "${base}/mcp",
         "--header",
         "Authorization:Bearer &lt;your-proship-token&gt;"
       ]
@@ -583,7 +591,7 @@ function docsHtml() {
   }
 }</code></pre>
       <h3>Raw HTTP</h3>
-      <pre><code>curl -X POST ${PUBLIC_URL}/mcp \\
+      <pre><code>curl -X POST ${base}/mcp \\
   -H "Content-Type: application/json" \\
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</code></pre>
     </section>
@@ -617,7 +625,7 @@ function docsHtml() {
     <section id="protocol">
       <h2>Protocol details</h2>
       <table class="protocol-table">
-        <tr><td>Endpoint</td><td><code>POST ${PUBLIC_URL}/mcp</code></td></tr>
+        <tr><td>Endpoint</td><td><code>POST ${base}/mcp</code></td></tr>
         <tr><td>Transport</td><td>Streamable HTTP (JSON-RPC 2.0 messages, application/json responses)</td></tr>
         <tr><td>Protocol versions</td><td><code>${SUPPORTED_VERSIONS.join('</code>, <code>')}</code></td></tr>
         <tr><td>Server</td><td><code>${SERVER_INFO.name}</code> v${SERVER_INFO.version}</td></tr>
@@ -639,14 +647,14 @@ export default async function mcpRoutes(app) {
     // Content negotiation: browsers get docs, MCP clients get the manifest.
     const accept = String(request.headers?.accept || '').toLowerCase();
     if (accept.includes('text/html')) {
-      return reply.header('Content-Type', 'text/html; charset=utf-8').send(docsHtml());
+      return reply.header('Content-Type', 'text/html; charset=utf-8').send(docsHtml(publicBase(request)));
     }
     return reply.header('Content-Type', 'application/json; charset=utf-8').send({
       name: SERVER_INFO.name,
       version: SERVER_INFO.version,
       protocol: SUPPORTED_VERSIONS,
       description: 'MCP server for ProShip — Thailand Post shipping for AI agents. Open in a browser for docs.',
-      docs: `${PUBLIC_URL}/mcp`,
+      docs: `${publicBase(request)}/mcp`,
       usage: {
         transport: 'Streamable HTTP (POST JSON-RPC messages to this URL)',
         auth: 'Authorization: Bearer <ProShip API token> for authenticated tools',
