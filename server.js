@@ -13,6 +13,7 @@ export async function buildServer() {
   });
   await app.register(rateLimit, { global: true, max: 600, timeWindow: '1 minute' });
   app.get('/healthz', async () => ({ ok: true }));
+  app.get('/', async (_req, reply) => reply.redirect('/mcp', 302));
   await app.register(mcpRoutes, { prefix: '/mcp' });
   return app;
 }
