@@ -30,10 +30,17 @@ const SERVER_INFO = { name: 'proship-mcp', version: '1.0.0' };
 // Absolute base for self-referencing URLs (label downloads, docs).
 // Derived from the request Host so the server works on any domain it is
 // actually reachable at; PUBLIC_URL env var overrides when set.
+// The Host value is reflected into HTML and label URLs, so it MUST be
+// allowlisted — an arbitrary Host header would be an XSS / URL-poisoning
+// vector.
+const ALLOWED_HOSTS = new Set(['mcp.proship.me', 'proship-mcp.fly.dev']);
 function publicBase(request) {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
-  const host = request?.headers?.host;
-  return host ? `https://${host}` : 'https://mcp.proship.me';
+  const host = String(request?.headers?.host || '').toLowerCase();
+  if (ALLOWED_HOSTS.has(host) || /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) {
+    return `https://${host}`;
+  }
+  return 'https://mcp.proship.me';
 }
 
 // English glosses for the Thai status pipeline (get_order_statuses).

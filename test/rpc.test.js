@@ -63,3 +63,14 @@ test('HTML docs render every tool from the registry', async () => {
   }
   await app.close();
 });
+
+test('spoofed Host header is not reflected into docs or manifest', async () => {
+  const app = await buildServer();
+  const evil = 'evil.example"><script>alert(1)</script>';
+  const h = await app.inject({ method: 'GET', url: '/mcp',
+    headers: { accept: 'text/html', host: evil } });
+  assert.ok(!h.body.includes('evil.example'), 'evil host must not appear in HTML');
+  const j = await app.inject({ method: 'GET', url: '/mcp', headers: { host: 'evil.example' } });
+  assert.match(j.json().docs, /^https:\/\/mcp\.proship\.me/);
+  await app.close();
+});
