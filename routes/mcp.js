@@ -579,6 +579,31 @@ function docsHtml(base) {
       </div>
     </section>
 
+    <section id="quickstart-th" lang="th">
+      <h2>เริ่มต้นใช้งานด่วน 🇹🇭</h2>
+      <p>เชื่อม AI agent (เช่น Claude) เข้ากับไปรษณีย์ไทยผ่าน ProShip ใน 3 ขั้นตอน — ไม่ต้องเขียนโค้ด</p>
+
+      <h3>ขั้นที่ 1 — ขอ token</h3>
+      <p><strong>มีบัญชี ProShip อยู่แล้ว:</strong> ใช้ API token ของคุณจาก <a href="https://developer.proship.me">developer.proship.me</a></p>
+      <p><strong>ยังไม่มีบัญชี:</strong> บอก AI ของคุณว่า <em>"สมัคร ProShip ให้หน่อย ร้านชื่อ … เบอร์ … ที่อยู่ …"</em> — AI จะเรียกเครื่องมือ <code>signup</code> และได้ token กลับมา <strong>token แสดงครั้งเดียวเท่านั้น ให้บันทึกทันที</strong> และเก็บเป็นความลับเหมือนรหัสผ่าน</p>
+
+      <h3>ขั้นที่ 2 — เชื่อมกับ Claude</h3>
+      <p>ใน Claude (Desktop หรือ claude.ai → Settings → Connectors) เพิ่ม custom connector ชี้ไปที่ <code>${base}/mcp</code> พร้อม header:</p>
+      <pre><code>Authorization: Bearer &lt;token ของคุณ&gt;</code></pre>
+      <p>หรือใช้ mcp-remote ตามตัวอย่าง config ในหัวข้อ "Connect a client" ด้านล่าง</p>
+
+      <h3>ขั้นที่ 3 — สั่งงานเป็นภาษาไทยได้เลย</h3>
+      <pre><code>สร้างออเดอร์ส่งพัสดุ 500 กรัม
+ผู้รับ: สมชาย ใจดี 081-234-5678
+ที่อยู่: 99 ถ.พระราม 4 แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110
+เก็บเงินปลายทาง 350 บาท แล้วปริ้นใบปะหน้าให้ด้วย</code></pre>
+      <p>AI จะสร้างออเดอร์ ได้เลขพัสดุไปรษณีย์ไทย และส่งลิงก์ใบปะหน้า PDF กลับมาให้พิมพ์</p>
+
+      <div class="callout">
+        <strong>หมายเหตุ:</strong> บัญชีที่สมัครผ่าน AI ใช้ไปรษณีย์ไทย EPS (<code>thaipost0</code>) ได้ทันที ส่วนแบบสัญญา (<code>thaipost</code>) ต้องติดต่อทีมงาน ProShip เพื่อผูกบัญชีไปรษณีย์ไทยของคุณก่อน — ติดต่อ <a href="mailto:care@proship.co.th">care@proship.co.th</a>
+      </div>
+    </section>
+
     <section id="connect">
       <h2>Connect a client</h2>
       <h3>Claude / MCP clients with HTTP transport</h3>

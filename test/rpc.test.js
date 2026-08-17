@@ -74,3 +74,11 @@ test('spoofed Host header is not reflected into docs or manifest', async () => {
   assert.match(j.json().docs, /^https:\/\/mcp\.proship\.me/);
   await app.close();
 });
+
+test('docs page includes the Thai quick-start section', async () => {
+  const app = await buildServer();
+  const res = await app.inject({ method: 'GET', url: '/mcp', headers: { accept: 'text/html' } });
+  assert.match(res.body, /เริ่มต้นใช้งานด่วน/);
+  assert.match(res.body, /เก็บเงินปลายทาง/);
+  await app.close();
+});
