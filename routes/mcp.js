@@ -25,7 +25,7 @@ import { putLabel, takeLabel } from '../lib/labelcache.js';
 
 const SUPPORTED_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const LATEST = SUPPORTED_VERSIONS[0];
-const SERVER_INFO = { name: 'proship-mcp', version: '1.0.0' };
+const SERVER_INFO = { name: 'proship-mcp', version: '1.0.1' };
 
 // Absolute base for self-referencing URLs (label downloads, docs).
 // Derived from the request Host so the server works on any domain it is
