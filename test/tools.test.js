@@ -110,3 +110,27 @@ test('track_parcel without token or env falls back to config error', async (t) =
   assert.match(out.content[0].text, /auth_or_config_required/);
   await app.close();
 });
+
+test('signup logs and fires webhook when SIGNUP_WEBHOOK_URL is set', async (t) => {
+  process.env.SIGNUP_WEBHOOK_URL = 'https://hooks.example.com/signup';
+  t.after(() => { globalThis.fetch = realFetch; delete process.env.SIGNUP_WEBHOOK_URL; });
+  const calls = stubFetch([
+    { status: 200, body: { token: 'e30.' + Buffer.from(JSON.stringify({ user: 'ShopX' })).toString('base64url') + '.x', user_id: 'user-1' } },
+    { status: 200, body: { message: 'Success' } },
+    { status: 200, body: [{ id: 'shop-9', createdAt: 2, details: { name: 'ShopX' } }] },
+    { status: 200, body: { ok: true } },
+  ]);
+  const app = await buildServer();
+  const res = await rpc(app, { jsonrpc: '2.0', id: 1, method: 'tools/call',
+    params: { name: 'signup', arguments: { shop_name: 'ShopX', phone: '0812345678',
+      address: { address: 'a', sub_district: 's', district: 'd', province: 'p', zipcode: '10110' } } } });
+  const data = JSON.parse(res.json().result.content[0].text);
+  assert.equal(data.shop_id, 'shop-9');
+  await new Promise((r) => setTimeout(r, 50)); // webhook is fire-and-forget
+  const hook = calls.find((c) => c.url === 'https://hooks.example.com/signup');
+  assert.ok(hook, 'webhook must be called');
+  const sent = JSON.parse(hook.init.body);
+  assert.equal(sent.event, 'proship_mcp_signup');
+  assert.equal(sent.shop_id, 'shop-9');
+  await app.close();
+});

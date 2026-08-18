@@ -72,6 +72,20 @@ function signupAllowed(ip) {
   return true;
 }
 
+// Fire-and-forget signup notification. Never blocks or fails the signup
+// response — the webhook target (LINE Notify relay, Telegram bot, sheet
+// endpoint, …) is set via SIGNUP_WEBHOOK_URL; unset means log-only.
+function notifySignup(payload) {
+  const url = process.env.SIGNUP_WEBHOOK_URL;
+  if (!url) return;
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event: 'proship_mcp_signup', ...payload, ts: new Date().toISOString() }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch((e) => console.error('[signup-webhook]', e?.message));
+}
+
 // Map the tool-facing snake_case customer/address shape onto the
 // upstream camelCase shape createOrder() expects.
 function toUpstreamCustomer(c) {
@@ -187,6 +201,8 @@ const PUBLIC_TOOLS = {
             province: a.province, zipcode: a.zipcode,
           },
         });
+        console.log(`[signup] user_id=${account.user_id} shop_id=${shop.shop_id} shop_name=${JSON.stringify(shopName)} ip=${request?.ip || 'unknown'}`);
+        notifySignup({ user_id: account.user_id, shop_id: shop.shop_id, shop_name: shopName });
         return {
           token: account.token,
           user: decodeJwtUser(account.token),
