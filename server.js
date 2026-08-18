@@ -17,6 +17,11 @@ export async function buildServer() {
   await app.register(rateLimit, { global: true, max: 600, timeWindow: '1 minute' });
   app.get('/healthz', async () => ({ ok: true }));
   app.get('/', async (_req, reply) => reply.redirect('/mcp', 302));
+  // Domain-ownership proof for the official MCP Registry (public key —
+  // the matching private key signs the registry auth challenge).
+  app.get('/.well-known/mcp-registry-auth', async (_req, reply) => reply
+    .header('Content-Type', 'text/plain')
+    .send('v=MCPv1; k=ed25519; p=MiTurqxWBw8G1xcyTfxCt62O0MshduLKBujUJc68zok='));
   await app.register(mcpRoutes, { prefix: '/mcp' });
   return app;
 }
