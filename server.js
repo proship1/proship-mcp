@@ -5,7 +5,10 @@ import rateLimit from '@fastify/rate-limit';
 import mcpRoutes from './routes/mcp.js';
 
 export async function buildServer() {
-  const app = Fastify({ logger: process.env.NODE_ENV === 'production' });
+  // trustProxy: behind Fly's edge, request.ip must come from
+  // X-Forwarded-For — otherwise every client shares the proxy IP and
+  // per-IP rate limits become global.
+  const app = Fastify({ logger: process.env.NODE_ENV === 'production', trustProxy: true });
   await app.register(cors, {
     origin: true,
     methods: ['GET', 'POST', 'OPTIONS'],

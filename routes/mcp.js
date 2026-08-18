@@ -60,7 +60,8 @@ function softError(e) {
 
 // Signup abuse guard: 3 per trailing hour per IP (spec §6).
 const SIGNUP_WINDOW_MS = 60 * 60_000;
-const SIGNUP_MAX = 3;
+// 10/hour, not lower: Thai mobile carriers CGNAT many users per IP.
+const SIGNUP_MAX = 10;
 const signupHits = new Map(); // ip -> [timestamps]
 function signupAllowed(ip) {
   const now = Date.now();
@@ -170,7 +171,7 @@ const PUBLIC_TOOLS = {
     },
     async handler(params, _ctx, request) {
       if (!signupAllowed(request?.ip || 'unknown')) {
-        return { error: 'rate_limited', detail: 'Max 3 signups per hour per IP.' };
+        return { error: 'rate_limited', detail: 'Max 10 signups per hour per IP.' };
       }
       const shopName = String(params?.shop_name || '').trim();
       const phone = String(params?.phone || '').trim();
